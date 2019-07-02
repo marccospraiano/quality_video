@@ -12,12 +12,47 @@ from skimage.measure import compare_ssim as ssim
 from sklearn.feature_extraction import image # for extract patches
 import cv2
 import os
+import csv
 import jnd_labels as jnd
 
-global scores_psnr, scores_ssim, pixel_resolution
+"""Definition of globals variables"""
+global scores_psnr, scores_ssim, pixel_resolution, bits_rate, dict_video, feature_video
 scores_psnr = []
 scores_ssim = []
 pixel_resolution = []
+bits_rate = []
+dict_video = {'PSNR':None, 'SSIM':None, 'VMAF':None, 'Resolution':None, 'Bitrate':None}
+feature_video = []
+
+"""
+def get_bitrate(video):
+    
+    read_video_filepath = os.path.join(os.getcwd(), video)
+    metadata = skvideo.io.ffprobe(read_video_filepath)
+    print(metadata)
+    metadata = metadata['video']
+    # H=int(metadata['@height'])
+    # W=int(metadata['@width'])
+    # fps=metadata['@r_frame_rate']
+    bit_rate = metadata[]
+    # bitrate.append(bit_rate)
+    
+    return bit_rate
+"""
+
+def save_csv(videos):
+
+    with open('../quality_video/video_quality.csv', 'w') as csvFile:
+        
+        fields = ['PSNR', 'SSIM', 'VMAF', 'Resolution', 'Bitrate']
+        
+        writer = csv.DictWriter(csvFile, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(videos)
+    
+    print("writing completed")
+    csvFile.close()
+
 
 def get_pixels(videos):
     
@@ -31,7 +66,7 @@ def get_pixels(videos):
             pixels[index] = (pixel.shape[0] * pixel.shape[1])  # counts qtd of pixels (WidthxHeight)
         
         qtd_pixels.append(np.sum(pixels))                      # qtd of pixels by video
-    return qtd_pixels
+    return qtd_pixels[0],qtd_pixels[1],qtd_pixels[2]
 
 
 def PSNR(videos):
@@ -63,7 +98,7 @@ def PSNR(videos):
             psnr_scores = np.mean(scores)
         mean_psnr.append(psnr_scores)    
     
-    return mean_psnr
+    return mean_psnr[0],mean_psnr[1],mean_psnr[2]
 
 def SSIM(videos):
     
@@ -83,35 +118,45 @@ def SSIM(videos):
         """psnr of the whole video"""
         mean_ssim.append(np.mean(scores))
         
-    return mean_ssim
+    return mean_ssim[0],mean_ssim[1],mean_ssim[2]
 
 
 def load_video(videos):
     
     resolucao = []
+    bitrate = []
     qp = 0
+    
     for file in videos:
         
         print('Carregando '+file)
-        v_file = skvideo.io.vreader(file) # to load any video frame-by-frame.
+        # file_bitrate = get_bitrate(file)             # gets the directly video bitrate
+        v_file = skvideo.io.vreader(file)            # to load any video frame-by-frame.
         video = [x for x in v_file]
-        video = np.array(video)           # sets list to numpy array (video) 
+        video = np.array(video)                      # sets list to numpy array (video) 
            
         resolucao.append(video)
+        # bitrate.append(file_bitrate)
         print(resolucao[qp].shape)
         qp += 1
     
-    # score_psnr = PSNR(resolucao)
-    # score_ssim = SSIM(resolucao)
-    scores_psnr.append(PSNR(resolucao))
-    scores_ssim.append(SSIM(resolucao))
-    pixel_resolution.append(get_pixels(resolucao))
+    #scores_psnr.append(PSNR(resolucao))
+    #scores_ssim.append(SSIM(resolucao))
+    #pixel_resolution.append(get_pixels(resolucao))
+    # bits_rate.append(bitrate)
     
-    print('<== Scores PSNR =====================>\n',scores_psnr,'\n<==============================>\n')
-    print('<== Scores SSIM =====================>\n',scores_ssim,'\n<==============================>\n')
-    print('<== Pixels by Videos ================>\n',pixel_resolution,'\n<==========================>\n')
+    dict_video['PSNR'] = PSNR(resolucao)#np.array(scores_psnr)
+    dict_video['SSIM'] = SSIM(resolucao)#np.array(scores_ssim)
+    dict_video['Resolution'] = get_pixels(resolucao)#np.array(pixel_resolution)
+    feature_video.append(dict_video)
+    print(feature_video)
+    
+    # print('<== Scores PSNR =====================>\n',scores_psnr,'\n<==============================>\n')
+    # print('<== Scores SSIM =====================>\n',scores_ssim,'\n<==============================>\n')
+    # print('<== Pixels by Videos ================>\n',pixel_resolution,'\n<=========================>\n')
+    # print('<== Bitrate =========================>\n',bits_rate,'\n<================================>\n')
         
-    return scores_psnr, scores_ssim
+    return feature_video
     
 
 def load_video_path():
@@ -134,7 +179,7 @@ def load_video_path():
     # computes the progress of the path
     pbar = tqdm(total=len(file_video))
     
-    for filename in file_video:
+    for filename in file_video[:1]:
         
         pbar.update(1)
         if filename == '.DS_Store' or filename == '.ipynb_checkpoints':
@@ -168,7 +213,7 @@ def load_video_path():
         count += 1
         
     pbar.close()
-    return filevideo
+    save_csv(filevideo)                          # saves in mode csv
+    # return filevideo
     
-    
-p,s = load_video_path()
+load_video_path()
