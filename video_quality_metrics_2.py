@@ -123,14 +123,20 @@ def SSIM(videos):
     return mean_ssim[0],mean_ssim[1],mean_ssim[2]
 
 
-def load_video(videos):
+def extract_quality_metrics(videos):
     
     resolucao = []
     bitrate = []
     qp = 0
     
+    print(videos)
     for file in videos:
         
+        # extract metadatas
+        # metadata = skvideo.io.ffprobe(skvideo.datasets.bigbuckbunny())
+        # print(metadata.keys())
+        # print(json.dumps(metadata["video"], indent=4))
+
         print('Carregando '+file)
         # file_bitrate = get_bitrate(file)             # gets the directly video bitrate
         v_file = skvideo.io.vreader(file)            # to load any video frame-by-frame.
@@ -147,9 +153,9 @@ def load_video(videos):
     #pixel_resolution.append(get_pixels(resolucao))
     # bits_rate.append(bitrate)
     
-    dict_video['PSNR'] = PSNR(resolucao)#np.array(scores_psnr)
-    dict_video['SSIM'] = SSIM(resolucao)#np.array(scores_ssim)
-    dict_video['Resolution'] = get_pixels(resolucao)#np.array(pixel_resolution)
+    #dict_video['PSNR'] = PSNR(resolucao)#np.array(scores_psnr)
+    #dict_video['SSIM'] = SSIM(resolucao)#np.array(scores_ssim)
+    #dict_video['Resolution'] = get_pixels(resolucao)#np.array(pixel_resolution)
     feature_video.append(dict_video)
     print(feature_video)
     
@@ -160,65 +166,6 @@ def load_video(videos):
         
     return feature_video
     
-
-def load_video_path(filename):
-    
-    # path of the video dataset
-    #data_path = 'VideoSet360p'    # name of the dataset folder
-    #list_video = []               # list for storage the videos files
-    videos_qp = []
-    labels_jnd = jnd.get_jnd()    # it gets samples array JND
-    count = 0
-    
-    # check out path 
-    #if not os.path.isdir(data_path):
-    #    print('Path not exist')
-    #    return -1
-    #else:
-    # sorted source path 
-    #    file_video = sorted(os.listdir(data_path))
-    
-    # computes the progress of the path
-    #pbar = tqdm(total=len(file_video))
-    
-    #for filename in file_video[:1]:
-        
-    #    pbar.update(1)
-    #if filename == '.DS_Store' or filename == '.ipynb_checkpoints':
-    #        continue
-            
-    name_path = os.path.join(os.getcwd(), filename)
-    #    # sorted subpath
-    #    for v_files in sorted(os.listdir(name)):
-            
-    #        v_file_path = os.path.join(name, v_files)
-            # print(v_file_path)
-            
-    #        if v_file_path == '.ipynb_checkpoints' or v_file_path == '.DS_Store':
-    #            continue
-                
-    #        list_video.append(v_file_path)
-        
-    labeljnd = labels_jnd[count]
-    print('size of the list:', len(list_video))
-    print('labels JND ==>', labeljnd, 'of the video:', count, '\n\n')
-
-    videos_qp.append(list_video[0])           # reference video for quality assessment -- QP:0
-    videos_qp.append(list_video[labeljnd[0]]) # 1 JND
-    videos_qp.append(list_video[labeljnd[1]]) # 2 JND
-    videos_qp.append(list_video[labeljnd[2]]) # 3 JND
-    print(videos_qp,'\n')
-        
-    filevideo = load_video(videos_qp)
-    list_video.clear()
-    videos_qp.clear()
-    count += 1
-        
-    #pbar.close()
-    save_csv(filevideo)                          # saves in mode csv
-    # return filevideo
-
-
 
 def download_video(video_url):
     url = video_url  
@@ -246,7 +193,7 @@ def main():
     resolutions = videoset_config.get("resolutions")
     qps = videoset_config.get("qps")
     fpss= videoset_config.get("fpss")
-    data_csv_path= server+"/"+videoset_config.get("database_csv_v1")
+    data_csv_path= server+"/"+videoset_config.get("database_scv_directory")
     jnd_points= videoset_config.get("jnd_points")
 
     for resolution in resolutions:
@@ -269,27 +216,29 @@ def main():
             # look for jnd points
             qps = []
             for jnd_point in range(1,jnd_points+1):
-                jnd_path = data_csv_path+"/"+resolution+"_"+jnd_point+".csv"
-                qps.append(jnd.get_jnd_from_server(jnd_path))
-
-                # download files with jnd points
-                temp_files = []                                
-                for qp in qps:
-                    video_name = prefix+"{:0>3}".format(video_id)+"_"+resolution+"_"+str(fps)+"_qp_{:0>2}".format(qp)+".264"                
-                    video_url = server+"/"+resolution_name+"/"+prefix+"{:0>3}".format(video_id)+"_"+resolution+"_"+str(fps)+"/"+video_name
+                jnd_path = data_csv_path+"/"+resolution+"_"+str(jnd_point)+".csv"
+                print(jnd_path)
+                qps.append(jnd.get_jnd_from_server(jnd_path, video_id))
+                print(qps)
+            # download files with jnd points
+            temp_files = []                                
+            for qp in qps:
+                print("QP",qp)
+                video_name = prefix+"{:0>3}".format(video_id)+"_"+resolution+"_"+str(fps)+"_qp_{:0>2}".format(qp)+".264"                
+                video_url = server+"/"+resolution_name+"/"+prefix+"{:0>3}".format(video_id)+"_"+resolution+"_"+str(fps)+"/"+video_name
                 
-                    print(video_url)
-                    temp_files.append(download_video(video_url))
+                print(video_url)
+                temp_files.append(download_video(video_url))
                 
-                filevideo = load_video(videos_qp)
+            filevideo = extract_quality_metrics(temp_files)
                 
-                save_csv(filevideo)  # save metrics in csv mode
+            save_csv(filevideo)  # save metrics in csv mode
     
-                #delete all temp videos
-                temp_files.append(temp_reference_file)
-                
-                success = delete_video(temp_files)
-                print(success)
+            #delete all temp videos
+            temp_files.append(temp_reference_file)
+
+            success = delete_video(temp_files)
+            print(success)
 
 
     #load_video_path()
