@@ -22,3 +22,14 @@ def get_jnd():
     
     return jnd
 
+def get_jnd_from_server(url_jnd):
+    
+    label_jnd = {}
+    lista = []
+    jnd = np.zeros(shape=(220, 3), dtype=np.int)
+        
+    df = pd.read_csv(url_jnd)
+        
+    return df.jnd
+            
+    
