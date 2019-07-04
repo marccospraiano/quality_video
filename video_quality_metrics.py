@@ -1,4 +1,3 @@
-
 import skvideo.io
 from tqdm import tqdm
 import numpy as np
@@ -39,6 +38,28 @@ def get_bitrate(video):
     
     return bit_rate
 """
+        
+def convert_format_yuv(video, file):
+    
+    T, M, N, C = video.shape
+    v_file = np.zeros((T, M, N, C))
+    
+    # first produce a yuv for demonstration
+    for index, frames in enumerate(video):
+        v = cv2.cvtColor(frames, cv2.COLOR_RGB2YUV)
+        v_file[index] = v
+    
+    name = str(file)
+    name_path = '../VideosYUV/'+name[name.find('/')+14:name.find('/',2)+37]
+    file_name = name[name.find('/')+37:name.find('/',2)+65]
+    
+    # check out path 
+    if not os.path.isdir(name_path):
+        os.makedirs(name_path)
+    
+    # produces a yuv file using -pix_fmt=yuvj444p
+    skvideo.io.vwrite(name_path+file_name+'.yuv', v_file)
+
 
 def save_csv(videos):
 
@@ -179,7 +200,7 @@ def load_video_path():
     # computes the progress of the path
     pbar = tqdm(total=len(file_video))
     
-    for filename in file_video[:1]:
+    for filename in file_video:
         
         pbar.update(1)
         if filename == '.DS_Store' or filename == '.ipynb_checkpoints':
