@@ -22,3 +22,11 @@ def get_jnd():
     
     return jnd
 
+def get_jnd_from_server(url_jnd, video_id):
+    
+    label_jnd = {}
+    lista = []    
+    df = pd.read_csv(url_jnd)
+    return df.jnd[video_id]
+            
+    

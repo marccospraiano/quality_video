@@ -1,0 +1,14 @@
+{
+    "server":"http://vod.icomp.ufam.edu.br/video_dataset/VideoSet",
+    "qps": 51,
+    "resolutions":["640x360","960x540","1280x720","1920x1080"],
+    "outputCsv":"video_quality.csv",
+    "fpss":
+        [
+            {"fps":24, "int1":[91,120], "int2":[136,148], "int3":[159,220]}, 
+            {"fps":30, "int1":[1,90], "int2":[121,135], "int3":[149,158]}
+        ],
+    "prefix":"videoSRC",
+    "database_scv_directory":"database_csv_v1",
+    "jnd_points":3 
+}
