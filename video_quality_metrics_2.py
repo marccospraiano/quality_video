@@ -16,6 +16,7 @@ import jnd_labels as jnd
 import json
 import requests
 import time
+import subprocess
 
 """Definition of globals variables"""
 global scores_psnr, scores_ssim, pixel_resolution, bits_rate, dict_video, feature_video
@@ -44,52 +45,45 @@ def get_bitrate(video):
     return bit_rate
 """
 
-def save_csv(videos):
+def save_csv(features):
 
     with open('../quality_video/video_quality.csv', 'w') as csvFile:
         
-        fields = ['PSNR', 'SSIM', 'VMAF', 'Resolution', 'Bitrate']
+        fields = ['RESOLUCAO', 'BITRATE', 'QP', 'FPS', 'PSNR', 'SSIM']
         
         writer = csv.DictWriter(csvFile, fieldnames=fields)
         writer.writeheader()
-        writer.writerows(videos)
+        writer.writerows(features)
     
     print("writing completed")
     csvFile.close()
 
 
-def get_pixels(videos):
+def get_pixels(video):
     
-    F, M, N, C = videos[0].shape                               # F: frames, M: width, N: height, C: channel
-    qtd_pixels = []
-    # pixels = 0
+    F, M, N, C = video.shape                               # F: frames, M: width, N: height, C: channel
     pixels = np.zeros(F, dtype=np.float32)
     
-    for r_video in videos[1:]:
-        for index, pixel in enumerate(r_video):
+    for index, pixel in enumerate(video):
             pixels[index] = (pixel.shape[0] * pixel.shape[1])  # counts qtd of pixels (WidthxHeight)
-        
-        qtd_pixels.append(np.sum(pixels))                      # qtd of pixels by video
-    return qtd_pixels[0],qtd_pixels[1],qtd_pixels[2]
+
+    return np.sum(pixels)                
 
 
-def PSNR(videos):
+def PSNR(video, reference_video):
     
-    F, M, N, C = videos[0].shape                  # F: frames, M: width, N: height, C: channel
-    reference_video = videos[0]                   # gets video QP 0 --> without distortion
-    mean_psnr = []                                # it storages mean scores ssim to the three videos (QPs)
+    F, M, N, C = reference_video.shape                  # F: frames, M: width, N: height, C: channel
     bitdepth = 8
     
     maxvalue = np.int(2**bitdepth -1)
     maxsq = maxvalue**2
     scores = np.zeros(F, dtype=np.float32)
     
-    for distorted_video in videos[1:]:
-        """scores psnr of the video frame-by-frame"""
-        for f in range(F):
+    """scores psnr of the video frame-by-frame"""
+    for f in range(F):
             
             referenceFrame = reference_video[f].astype(np.float)            
-            distortedFrame = distorted_video[f].astype(np.float)
+            distortedFrame = video[f].astype(np.float)
             """Please supply only the luminance channel"""
             
             mse = np.mean((referenceFrame  - distortedFrame)**2)
@@ -98,73 +92,97 @@ def PSNR(videos):
             
             """psnr of the whole video"""
             psnr_scores = np.mean(scores)
-        mean_psnr.append(psnr_scores)    
+            
     
-    return mean_psnr[0],mean_psnr[1],mean_psnr[2]
+    return psnr_scores
 
-def SSIM(videos):
+def SSIM(video, reference_video):
     
-    F, M, N, C = videos[0].shape                  # F: frames, N: width, M: height, C: channel
-    reference_video = videos[0]                   # gets video QP 0 --> without distortion
-    mean_ssim = []                                # it storages mean scores ssim to the three videos (QPs)
+    F, M, N, C = reference_video.shape                  # F: frames, N: width, M: height, C: channel
     scores = np.zeros(F, dtype=np.float32)
     
-    for distorted_video in videos[1:]:
-        """scores ssim of the video frame-by-frame"""
-        for f in range(F):
-            referenceFrame = reference_video[f].astype(np.float)            
-            distortedFrame = distorted_video[f].astype(np.float)
+    """scores ssim of the video frame-by-frame"""
+    for f in range(F):
+        referenceFrame = reference_video[f].astype(np.float)            
+        distortedFrame = video[f].astype(np.float)
             
-            """We pass the luminance channel"""
-            scores[f] = ssim(referenceFrame , distortedFrame, multichannel=True)
+        """We pass the luminance channel"""
+        scores[f] = ssim(referenceFrame , distortedFrame, multichannel=True)
         """psnr of the whole video"""
-        mean_ssim.append(np.mean(scores))
         
-    return mean_ssim[0],mean_ssim[1],mean_ssim[2]
+        
+    return np.mean(scores)
+
+def VMAF(video, reference_video):
+
+    F, M, N, C = reference_video.shape
+    reference_yuv = reference_video.split("/")
+    del reference_yuv[-1]
+    reference_video_yuv = reference_video+".yuv"
+
+    video_yuv = video.split("/")
+    del video_yuv[-1]
+    video_yuv = video+".yuv"
+
+    ffmpegcmd_segm = ("./run_vmaf yuv420p %d %d  %s %s "%(M, N, reference_video_yuv, video_yuv))
+
+    try:
+        #Execute FFMPEG command SEGMENTER
+        probe = subprocess.Popen((ffmpegcmd_segm).split(), stdout=subprocess.PIPE)
+        output, err = probe.communicate()
+        if not err:
+            return True
+        print (err)
+    except:
+        return False
+    else:
+        return True
 
 
-def extract_quality_metrics(videos):
+def get_bitrate(video_path):
     
-    resolucao = []
-    bitrate = []
+    filesize = os.path.getsize(video_path)
+    filesize_bps = filesize * 8
+
+    return(filesize/5)
+
+def extract_quality_metrics(videos_path, temp_reference_file):
+    
+    videos = []
+    metrics = []
     qp = 0
-    
-    print(videos)
-    for file in videos:
-        
-        # extract metadatas
-        # metadata = skvideo.io.ffprobe(skvideo.datasets.bigbuckbunny())
-        # print(metadata.keys())
-        # print(json.dumps(metadata["video"], indent=4))
+    dict_video = {}
 
-        print('Carregando '+file)
-        # file_bitrate = get_bitrate(file)             # gets the directly video bitrate
-        v_file = skvideo.io.vreader(file)            # to load any video frame-by-frame.
-        video = [x for x in v_file]
-        video = np.array(video)                      # sets list to numpy array (video) 
+    print('Loading Video Reference'+temp_reference_file)
+    video_ref_obj = skvideo.io.vreader(temp_reference_file)            # to load any video frame-by-frame.
+    video_ref_frame = [x for x in video_ref_obj]
+    video_ref_frame = np.array(video_ref_frame)
+    
+    print(temp_reference_file)
+    print(videos_path)
+    for video_path in videos_path:
+        print('Loading Video '+video_path)
+        video_obj = skvideo.io.vreader(video_path)            # to load any video frame-by-frame.
+        video_frame = [x for x in video_obj]
+        video_frame = np.array(video_frame)                      # sets list to numpy array (video) 
            
-        resolucao.append(video)
-        # bitrate.append(file_bitrate)
-        print(resolucao[qp].shape)
-        qp += 1
+        dict_video['PSNR'] = PSNR(video_frame, video_ref_frame)
+        dict_video['SSIM'] = SSIM(video_frame, video_ref_frame)#np.array(scores_ssim)
+        dict_video['RESOLUCAO'] = get_pixels(video_frame)#np.array(pixel_resolution)
+        dict_video['QP'] = str(video_path.split(".")[0]).split("_")[4]
+        dict_video['FPS'] = str(video_path.split(".")[0]).split("_")[2]
+        dict_video['BITRATE'] = get_bitrate(video_path)
     
-    #scores_psnr.append(PSNR(resolucao))
-    #scores_ssim.append(SSIM(resolucao))
-    #pixel_resolution.append(get_pixels(resolucao))
-    # bits_rate.append(bitrate)
-    
-    #dict_video['PSNR'] = PSNR(resolucao)#np.array(scores_psnr)
-    #dict_video['SSIM'] = SSIM(resolucao)#np.array(scores_ssim)
-    #dict_video['Resolution'] = get_pixels(resolucao)#np.array(pixel_resolution)
-    feature_video.append(dict_video)
-    print(feature_video)
+        metrics.append(dict_video)
+
+    print(metrics)
     
     # print('<== Scores PSNR =====================>\n',scores_psnr,'\n<==============================>\n')
     # print('<== Scores SSIM =====================>\n',scores_ssim,'\n<==============================>\n')
     # print('<== Pixels by Videos ================>\n',pixel_resolution,'\n<=========================>\n')
     # print('<== Bitrate =========================>\n',bits_rate,'\n<================================>\n')
         
-    return feature_video
+    return metrics
     
 
 def download_video(video_url):
@@ -173,11 +191,12 @@ def download_video(video_url):
     r = requests.get(url, allow_redirects=True)
     open(filename_temp, 'wb').write(r.content)
 
-    return(filename_temp)
+    return(str(filename_temp))
 
-def delete_video(temp):
+def delete_video(temps):
       
-    os.remove(temp)     
+    for file in temps:
+        os.remove(file)     
     
     return True
     
@@ -230,9 +249,9 @@ def main():
                 print(video_url)
                 temp_files.append(download_video(video_url))
                 
-            filevideo = extract_quality_metrics(temp_files)
+            metrics = extract_quality_metrics(temp_files, temp_reference_file)
                 
-            save_csv(filevideo)  # save metrics in csv mode
+            save_csv(metrics)  # save metrics in csv mode
     
             #delete all temp videos
             temp_files.append(temp_reference_file)
@@ -240,8 +259,6 @@ def main():
             success = delete_video(temp_files)
             print(success)
 
-
-    #load_video_path()
 
 if __name__ == '__main__':
 	main()
