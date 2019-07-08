@@ -6,13 +6,13 @@ import numpy as np
 import torch
 from sklearn.feature_extraction import image
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '1' # SET A SINGLE GPU
+#os.environ['CUDA_VISIBLE_DEVICES'] = '1' # SET A SINGLE GPU
 spatial = False         # Return a spatial map of perceptual distance.
 model = dm.DistModel()
 model.initialize(model='net-lin',net='alex',use_gpu=True,version='0.1', spatial=spatial)
 
 
-def metric_lpips(video_ref, video_dist):
+def lpips(video_ref, video_dist):
     
     """
     ------ Computing the distance between two images --------
@@ -53,6 +53,7 @@ def metric_lpips(video_ref, video_dist):
         
     return np.array(scores).mean()
 
+'''
 if __name__ == "__main__":
     
     file_ref = 'videoSRC001_640x360_30_qp_00.264'
@@ -68,4 +69,4 @@ if __name__ == "__main__":
     
     values = metric_lpips(video_ref, video_dist)
     print(values)
-    
+'''    
