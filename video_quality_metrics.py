@@ -23,22 +23,6 @@ bits_rate = []
 dict_video = {'PSNR':None, 'SSIM':None, 'VMAF':None, 'Resolution':None, 'Bitrate':None}
 feature_video = []
 
-"""
-def get_bitrate(video):
-    
-    read_video_filepath = os.path.join(os.getcwd(), video)
-    metadata = skvideo.io.ffprobe(read_video_filepath)
-    print(metadata)
-    metadata = metadata['video']
-    # H=int(metadata['@height'])
-    # W=int(metadata['@width'])
-    # fps=metadata['@r_frame_rate']
-    bit_rate = metadata[]
-    # bitrate.append(bit_rate)
-    
-    return bit_rate
-"""
-        
 def convert_format_yuv(video, file):
     
     T, M, N, C = video.shape
@@ -49,17 +33,18 @@ def convert_format_yuv(video, file):
         v = cv2.cvtColor(frames, cv2.COLOR_RGB2YUV)
         v_file[index] = v
     
-    name = str(file)
-    name_path = '../VideosYUV/'+name[name.find('/')+14:name.find('/',2)+37]
-    file_name = name[name.find('/')+37:name.find('/',2)+65]
+    name_path = str(file)
+    name_folder = name_path.split("/")[-2]
+    
+    name_dir = '../directory_yuv/'+name_folder
+    file_name = name_path.split("/")[-1] 
     
     # check out path 
-    if not os.path.isdir(name_path):
-        os.makedirs(name_path)
+    if not os.path.isdir(name_dir):
+        os.makedirs(name_dir)
     
     # produces a yuv file using -pix_fmt=yuvj444p
-    skvideo.io.vwrite(name_path+file_name+'.yuv', v_file)
-
+    skvideo.io.vwrite(name_path+file_name[-4]+'.yuv', v_file)
 
 def save_csv(videos):
 
@@ -144,31 +129,32 @@ def SSIM(videos):
 
 def load_video(videos):
     
-    resolucao = []
+    store_list_video = []
     bitrate = []
     qp = 0
     
     for file in videos:
         
-        print('Carregando '+file)
-        # file_bitrate = get_bitrate(file)             # gets the directly video bitrate
-        v_file = skvideo.io.vreader(file)            # to load any video frame-by-frame.
+        print('Carregando'+file)
+        # file_bitrate = get_bitrate(file)          # gets the directly video bitrate
+        v_file = skvideo.io.vreader(file)           # to load any video frame-by-frame.
         video = [x for x in v_file]
-        video = np.array(video)                      # sets list to numpy array (video) 
-           
-        resolucao.append(video)
+        video = np.array(video)                     # sets list to numpy array (video) 
+        
+        store_list_video.append(video)
         # bitrate.append(file_bitrate)
-        print(resolucao[qp].shape)
+        print(store_list_video[qp].shape)
+        convert_format_yuv(video, file)
         qp += 1
+        
+    scores_psnr.append(PSNR(resolucao))
+    scores_ssim.append(SSIM(resolucao))
+    pixel_resolution.append(get_pixels(resolucao))
+    bits_rate.append(bitrate)
     
-    #scores_psnr.append(PSNR(resolucao))
-    #scores_ssim.append(SSIM(resolucao))
-    #pixel_resolution.append(get_pixels(resolucao))
-    # bits_rate.append(bitrate)
-    
-    dict_video['PSNR'] = PSNR(resolucao)#np.array(scores_psnr)
-    dict_video['SSIM'] = SSIM(resolucao)#np.array(scores_ssim)
-    dict_video['Resolution'] = get_pixels(resolucao)#np.array(pixel_resolution)
+    dict_video['PSNR'] = PSNR(resolucao)             # np.array(scores_psnr)
+    dict_video['SSIM'] = SSIM(resolucao)             # np.array(scores_ssim)
+    dict_video['Resolution'] = get_pixels(resolucao) # np.array(pixel_resolution)
     feature_video.append(dict_video)
     print(feature_video)
     
@@ -177,7 +163,7 @@ def load_video(videos):
     # print('<== Pixels by Videos ================>\n',pixel_resolution,'\n<=========================>\n')
     # print('<== Bitrate =========================>\n',bits_rate,'\n<================================>\n')
         
-    return feature_video
+    return
     
 
 def load_video_path():
@@ -200,7 +186,7 @@ def load_video_path():
     # computes the progress of the path
     pbar = tqdm(total=len(file_video))
     
-    for filename in file_video:
+    for filename in file_video[:1]:
         
         pbar.update(1)
         if filename == '.DS_Store' or filename == '.ipynb_checkpoints':
@@ -234,7 +220,9 @@ def load_video_path():
         count += 1
         
     pbar.close()
-    save_csv(filevideo)                          # saves in mode csv
+    # save_csv(filevideo)                          # saves in mode csv
     # return filevideo
     
-load_video_path()
+
+if __name__ == "__main__":
+    load_video_path()

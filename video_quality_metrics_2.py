@@ -166,7 +166,7 @@ def extract_quality_metrics(videos_path, temp_reference_file):
         video_frame = [x for x in video_obj]
         video_frame = np.array(video_frame)                      # sets list to numpy array (video) 
            
-        dict_video['PSNR'] = PSNR(video_frame, video_ref_frame)
+        dict_video['PSNR'] = PSNR(video_frame, video_ref_frame) 
         dict_video['SSIM'] = SSIM(video_frame, video_ref_frame)#np.array(scores_ssim)
         dict_video['RESOLUCAO'] = get_pixels(video_frame)#np.array(pixel_resolution)
         dict_video['QP'] = str(video_path.split(".")[0]).split("_")[4]
