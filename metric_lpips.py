@@ -7,8 +7,8 @@ from lpips_tensorflow import lpips_tf
 import os 
 os.environ['CUDA_VISIBLE_DEVICES'] = '1' # SET A SINGLE GPU
 
-def metric_lpips(video_ref, video_dist):
-    
+def lpips(video_ref, video_dist):
+    print("CALCULATING LPIPS METRICS...")    
     """
     ------ Computing the distance between two images --------
     Rather information: https://github.com/richzhang/PerceptualSimilarity
@@ -35,11 +35,11 @@ def metric_lpips(video_ref, video_dist):
             image1_ph = tf.compat.v1.placeholder(tf.float32)
             patch_ref0 = image.extract_patches_2d(referenceFrame, (64,64), max_patches=100, random_state=None)
             
-            # print('Patches shape: {}'.format(patch_ref0.shape))
+            print('Patches shape: {}'.format(patch_ref0.shape))
             
             patch_dist1 = image.extract_patches_2d(distortedFrame, (64,64), max_patches=100, random_state=None)
             
-            # print('Patches shape: {}'.format(patch_dist1.shape))
+            print('Patches shape: {}'.format(patch_dist1.shape))
             
             distance_t = lpips_tf.lpips(image0_ph, image1_ph, model='net-lin', net='alex')
             
@@ -47,6 +47,6 @@ def metric_lpips(video_ref, video_dist):
                 distance = session.run(distance_t, feed_dict={image0_ph:  patch_ref0, image1_ph: patch_dist1})
                 # print(distance.mean())
                 scores.append(distance.mean())    # storing the mean distance of thes frames patches
-                # print(len(scores))
+                print(len(scores))
         
     return np.array(scores).mean()

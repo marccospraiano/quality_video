@@ -3,7 +3,7 @@ import numpy as np
 
 
 def PSNR(video, reference_video):
-    
+    print("CALCULATING PSNR METRIC...")    
     F, M, N, C = reference_video.shape                  # F: frames, M: width, N: height, C: channel
     bitdepth = 8
     

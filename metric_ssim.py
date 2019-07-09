@@ -3,7 +3,7 @@ import numpy as np
 
 
 def SSIM(video, reference_video):
-    
+    print("CALCULATING SSIM METRIC...")    
     F, M, N, C = reference_video.shape                  # F: frames, N: width, M: height, C: channel
     scores = np.zeros(F, dtype=np.float32)
     
