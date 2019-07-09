@@ -1,0 +1,6 @@
+Requesitos para a metrica Lpips:
+
+* cd lpips_tensorflow
+* Install TensorFlow and dependencies from http://tensorflow.org/
+* Install other dependencies.
+* pip install -r requirements.txt
