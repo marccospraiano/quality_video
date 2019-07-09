@@ -9,7 +9,8 @@ import jnd_labels as jnd
 import metric_lpips as metric_lpips
 import metric_ssim as metric_ssim
 import metric_psnr as metric_psnr
-#import metric_vmaf as metric_vmaf
+import metric_vmaf as metric_vmaf
+import create_video_yuv as yuv
 import json
 import requests
 import time
@@ -61,7 +62,7 @@ def save_csv(features):
 
     with open(arq, mode) as csvFile:
         
-        fields = ['RESOLUCAO', 'BITRATE', 'QP', 'FPS', 'PSNR', 'SSIM']
+        fields = ['RESOLUCAO', 'BITRATE', 'QP', 'FPS', 'PSNR', 'SSIM', 'LPIPS', 'VMAF']
         writer = csv.DictWriter(csvFile, fieldnames=fields)
         
         if flag:
@@ -80,7 +81,7 @@ def get_pixels(video):
     for index, pixel in enumerate(video):
             pixels[index] = (pixel.shape[0] * pixel.shape[1])  # counts qtd of pixels (WidthxHeight)
 
-    return np.sum(pixels)                
+    return int(np.sum(pixels))                
 
 
 def get_bitrate(video_path):
@@ -100,6 +101,14 @@ def extract_quality_metrics(videos_path, temp_reference_file):
     video_ref_frame = [x for x in video_ref_obj]
     video_ref_frame = np.array(video_ref_frame)
     
+    referencename_yuv = temp_reference_file.split(".")
+    del referencename_yuv[-1]
+    #print(referencename_yuv)
+    referencename_yuv = referencename_yuv[0]+".yuv"
+    
+    if not yuv.convert_format_yuv(video_ref_frame, referencename_yuv):
+        print("Error in YUV Conversion")
+
     print(temp_reference_file)
     print(videos_path)
     for video_path in videos_path:
@@ -114,7 +123,14 @@ def extract_quality_metrics(videos_path, temp_reference_file):
         dict_video['PSNR'] = metric_psnr.PSNR(video_frame, video_ref_frame)
         dict_video['SSIM'] = metric_ssim.SSIM(video_frame, video_ref_frame)#np.array(scores_ssim)
         dict_video['LPIPS'] = metric_lpips.lpips(video_frame, video_ref_frame)#np.array(scores_ssim)
-        #dict_video['LPIPS'] = metric_vmaf.vmaf(video_frame, video_ref_frame)#np.array(scores_ssim)
+
+        #convert file to yuv format
+        videoname_yuv = video_path.split(".")
+        del videoname_yuv[-1]
+        videoname_yuv = videoname_yuv[0]+".yuv"
+        if not yuv.convert_format_yuv(video_frame, videoname_yuv):
+            print("Error in YUV Conversion")
+        dict_video['VMAF'] = metric_vmaf.vmaf(video_frame, video_ref_frame)#np.array(scores_ssim)
         dict_video['RESOLUCAO'] = get_pixels(video_frame)#np.array(pixel_resolution)
         dict_video['QP'] = str(video_path.split(".")[0]).split("_")[4]
         dict_video['FPS'] = str(video_path.split(".")[0]).split("_")[2]

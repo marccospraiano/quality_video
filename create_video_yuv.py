@@ -1,5 +1,8 @@
+import cv2 
+import skvideo.io 
+import numpy as np
 
-def convert_format_yuv(video, file):
+def convert_format_yuv(video, filename):
     
     T, M, N, C = video.shape
     v_file = np.zeros((T, M, N, C))
@@ -9,15 +12,9 @@ def convert_format_yuv(video, file):
         v = cv2.cvtColor(frames, cv2.COLOR_RGB2YUV)
         v_file[index] = v
     
-    name_path = str(file)
-    name_folder = name_path.split("/")[-2]
-    
-    name_dir = '../directory_yuv/'+name_folder
-    file_name = name_path.split("/")[-1] 
-    
-    # check out path 
-    if not os.path.isdir(name_dir):
-        os.makedirs(name_dir)
-    
     # produces a yuv file using -pix_fmt=yuvj444p
-    skvideo.io.vwrite(name_path+file_name[-4]+'.yuv', v_file)
+    try:
+        skvideo.io.vwrite(filename, v_file)
+        return(True)
+    except:
+        return(False)
