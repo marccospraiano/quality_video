@@ -6,10 +6,10 @@ from skvideo.utils import *
 import os
 import csv
 import jnd_labels as jnd
-import metric_lpips as metric_lpips
+import PerceptualSimilarity.metric_lpips as metric_lpips
 import metric_ssim as metric_ssim
 import metric_psnr as metric_psnr
-import metric_vmaf as metric_vmaf
+#import metric_vmaf as metric_vmaf
 import json
 import requests
 import time
@@ -113,7 +113,7 @@ def extract_quality_metrics(videos_path, temp_reference_file):
         dict_video['PSNR'] = PSNR(video_frame, video_ref_frame)
         dict_video['SSIM'] = SSIM(video_frame, video_ref_frame)#np.array(scores_ssim)
         dict_video['LPIPS'] = metric_lpips.lpips(video_frame, video_ref_frame)#np.array(scores_ssim)
-        dict_video['LPIPS'] = metric_vmaf.vmaf(video_frame, video_ref_frame)#np.array(scores_ssim)
+        #dict_video['LPIPS'] = metric_vmaf.vmaf(video_frame, video_ref_frame)#np.array(scores_ssim)
         dict_video['RESOLUCAO'] = get_pixels(video_frame)#np.array(pixel_resolution)
         dict_video['QP'] = str(video_path.split(".")[0]).split("_")[4]
         dict_video['FPS'] = str(video_path.split(".")[0]).split("_")[2]
