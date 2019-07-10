@@ -50,7 +50,7 @@ def convert_format_yuv(video, file):
 
 def save_csv(features):
 
-    arq = '../quality_video/video_quality.csv'
+    arq = 'video_quality.csv'
 
     flag = False
     if os.path.exists(arq):
