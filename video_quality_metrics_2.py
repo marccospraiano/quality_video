@@ -6,7 +6,7 @@ from skvideo.utils import *
 import os
 import csv
 import jnd_labels as jnd
-import metric_lpips as metric_lpips
+#import metric_lpips as metric_lpips
 import metric_ssim as metric_ssim
 import metric_psnr as metric_psnr
 import metric_vmaf as metric_vmaf
@@ -47,6 +47,29 @@ def convert_format_yuv(video, file):
     # produces a yuv file using -pix_fmt=yuvj444p
     skvideo.io.vwrite(name_path+file_name+'.yuv', v_file)
 '''        
+
+def prepare_csv(features):
+
+    arq = 'video_quality_norm.csv'
+    qtd_points = 3
+    
+    flag = False
+    list_metrics = []
+        
+    for j in range(qtd_points):
+        list_metrics.append(features[j])
+        
+    if os.path.exists(arq):
+        mode = "a"
+    else:
+        mode = "w"
+        
+    with open(arq, mode) as csvFile:
+        writer = csv.writer(csvFile, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)    
+        writer.writerow(list_metrics)
+
+    print("Writing Completed Normalized File")
+    csvFile.close()
 
 def save_csv(features):
 
@@ -108,12 +131,14 @@ def extract_quality_metrics(videos_path, temp_reference_file):
     
     if not yuv.convert_format_yuv(video_ref_frame, referencename_yuv):
         print("Error in YUV Conversion")
-
+    
     print(temp_reference_file)
     print(videos_path)
+
+    
+
     for video_path in videos_path:
-        dict_video = {}
-        
+        dict_video = {}    
         print('Loading Video '+video_path)
         video_obj = skvideo.io.vreader(video_path)            # to load any video frame-by-frame.
         video_frame = [x for x in video_obj]
@@ -122,22 +147,25 @@ def extract_quality_metrics(videos_path, temp_reference_file):
         
         dict_video['PSNR'] = metric_psnr.PSNR(video_frame, video_ref_frame)
         dict_video['SSIM'] = metric_ssim.SSIM(video_frame, video_ref_frame)#np.array(scores_ssim)
-        dict_video['LPIPS'] = metric_lpips.lpips(video_frame, video_ref_frame)#np.array(scores_ssim)
-
+        #dict_video['LPIPS'] = metric_lpips.lpips(video_frame, video_ref_frame)#np.array(scores_ssim)
+        
         #convert file to yuv format
         videoname_yuv = video_path.split(".")
         del videoname_yuv[-1]
         videoname_yuv = videoname_yuv[0]+".yuv"
         if not yuv.convert_format_yuv(video_frame, videoname_yuv):
             print("Error in YUV Conversion")
-        dict_video['VMAF'] = metric_vmaf.vmaf(video_frame, video_ref_frame)#np.array(scores_ssim)
+        dict_video['VMAF'] = metric_vmaf.vmaf(video_ref_frame, videoname_yuv, referencename_yuv)#np.array(scores_ssim)
         dict_video['RESOLUCAO'] = get_pixels(video_frame)#np.array(pixel_resolution)
         dict_video['QP'] = str(video_path.split(".")[0]).split("_")[4]
         dict_video['FPS'] = str(video_path.split(".")[0]).split("_")[2]
         dict_video['BITRATE'] = get_bitrate(video_path)
 
         metrics.append(dict_video)
+        #delete_one_video(videoname_yuv)
 
+
+    #delete_one_video(referencename_yuv)
     print(metrics)
     
     # print('<== Scores PSNR =====================>\n',scores_psnr,'\n<==============================>\n')
@@ -160,6 +188,12 @@ def delete_video(temps):
       
     for file in temps:
         os.remove(file)     
+    
+    return True
+
+def delete_one_video(filename):
+      
+    os.remove(filename)     
     
     return True
     
@@ -215,7 +249,8 @@ def main():
             metrics = extract_quality_metrics(temp_files, temp_reference_file)
                 
             save_csv(metrics)  # save metrics in csv mode
-    
+            prepare_csv(metrics)
+
             #delete all temp videos
             temp_files.append(temp_reference_file)
 
