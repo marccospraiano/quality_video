@@ -1,5 +1,7 @@
 from skimage.measure import compare_ssim as ssim
 import numpy as np
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '1' # SET A SINGLE GPU
 
 
 def PSNR(video, reference_video):

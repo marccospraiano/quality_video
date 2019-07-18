@@ -6,15 +6,16 @@ from skvideo.utils import *
 import os
 import csv
 import jnd_labels as jnd
-import metric_lpips as metric_lpips
+# import metric_lpips as metric_lpips
 import metric_ssim as metric_ssim
 import metric_psnr as metric_psnr
-import metric_vmaf as metric_vmaf
-import create_video_yuv as yuv
+# import metric_vmaf as metric_vmaf
+# import create_video_yuv as yuv
 import json
 import requests
 import time
 import subprocess
+os.environ['CUDA_VISIBLE_DEVICES'] = '1' # SET A SINGLE GPU
 
 """Definition of globals variables"""
 global scores_psnr, scores_ssim, pixel_resolution, bits_rate, dict_video, feature_video
@@ -23,6 +24,7 @@ scores_ssim = []
 pixel_resolution = []
 bits_rate = []
 feature_video = []
+prefix = "videos"
 
 config_path = os.getcwd() + "/videoset_config.json"
 '''
@@ -124,14 +126,14 @@ def extract_quality_metrics(videos_path, temp_reference_file):
     video_ref_frame = [x for x in video_ref_obj]
     video_ref_frame = np.array(video_ref_frame)
     
-    referencename_yuv = temp_reference_file.split(".")
+    '''referencename_yuv = temp_reference_file.split(".")
     del referencename_yuv[-1]
     #print(referencename_yuv)
     referencename_yuv = referencename_yuv[0]+".yuv"
     
     if not yuv.convert_format_yuv(video_ref_frame, referencename_yuv):
         print("Error in YUV Conversion")
-    
+    '''
     print(temp_reference_file)
     print(videos_path)
 
@@ -142,20 +144,22 @@ def extract_quality_metrics(videos_path, temp_reference_file):
         print('Loading Video '+video_path)
         video_obj = skvideo.io.vreader(video_path)            # to load any video frame-by-frame.
         video_frame = [x for x in video_obj]
-        video_frame = np.array(video_frame)                      # sets list to numpy array (video) 
+        video_frame = np.array(video_frame)                   # sets list to numpy array (video) 
            
         
         dict_video['PSNR'] = metric_psnr.PSNR(video_frame, video_ref_frame)
         dict_video['SSIM'] = metric_ssim.SSIM(video_frame, video_ref_frame)#np.array(scores_ssim)
-        dict_video['LPIPS'] = metric_lpips.lpips(video_frame, video_ref_frame)#np.array(scores_ssim)
+        '''dict_video['LPIPS'] = metric_lpips.lpips(video_frame, video_ref_frame)#np.array(scores_ssim)'''
         
         #convert file to yuv format
+        '''
         videoname_yuv = video_path.split(".")
         del videoname_yuv[-1]
-        videoname_yuv = videoname_yuv[0]+".yuv"
+        # videoname_yuv = videoname_yuv[0]+".yuv"
         if not yuv.convert_format_yuv(video_frame, videoname_yuv):
             print("Error in YUV Conversion")
-        dict_video['VMAF'] = metric_vmaf.vmaf(video_ref_frame, videoname_yuv, referencename_yuv)#np.array(scores_ssim)
+        # dict_video['VMAF'] = metric_vmaf.vmaf(video_ref_frame, videoname_yuv, referencename_yuv)#np.array(scores_ssim)
+        '''
         dict_video['RESOLUCAO'] = get_pixels(video_frame)#np.array(pixel_resolution)
         dict_video['QP'] = str(video_path.split(".")[0]).split("_")[4]
         dict_video['FPS'] = str(video_path.split(".")[0]).split("_")[2]
@@ -178,7 +182,7 @@ def extract_quality_metrics(videos_path, temp_reference_file):
 
 def download_video(video_url):
     url = video_url  
-    filename_temp = url.split("/")[-1]
+    filename_temp = os.path.join(prefix,url.split("/")[-1])
     r = requests.get(url, allow_redirects=True)
     open(filename_temp, 'wb').write(r.content)
 
@@ -234,7 +238,7 @@ def main():
             for jnd_point in range(1,jnd_points+1):
                 jnd_path = data_csv_path+"/"+resolution+"_"+str(jnd_point)+".csv"
                 print(jnd_path)
-                qps.append(jnd.get_jnd_from_server(jnd_path, video_id))
+                qps.append(jnd.get_jnd_from_server(jnd_path, video_id-1))
                 print(qps)
             # download files with jnd points
             temp_files = []                                
