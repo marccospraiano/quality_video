@@ -6,9 +6,9 @@ from skvideo.utils import *
 import os
 import csv
 import jnd_labels as jnd
-# import metric_lpips as metric_lpips
-import metric_ssim as metric_ssim
-import metric_psnr as metric_psnr
+import metric_lpips as metric_lpips
+# import metric_ssim as metric_ssim
+# import metric_psnr as metric_psnr
 # import metric_vmaf as metric_vmaf
 # import create_video_yuv as yuv
 import json
@@ -147,9 +147,9 @@ def extract_quality_metrics(videos_path, temp_reference_file):
         video_frame = np.array(video_frame)                   # sets list to numpy array (video) 
            
         
-        dict_video['PSNR'] = metric_psnr.PSNR(video_frame, video_ref_frame)
-        dict_video['SSIM'] = metric_ssim.SSIM(video_frame, video_ref_frame)#np.array(scores_ssim)
-        '''dict_video['LPIPS'] = metric_lpips.lpips(video_frame, video_ref_frame)#np.array(scores_ssim)'''
+        #dict_video['PSNR'] = metric_psnr.PSNR(video_frame, video_ref_frame)
+        #dict_video['SSIM'] = metric_ssim.SSIM(video_frame, video_ref_frame)#np.array(scores_ssim)
+        dict_video['LPIPS'] = metric_lpips.lpips(video_frame, video_ref_frame)#np.array(scores_ssim)'''
         
         #convert file to yuv format
         '''

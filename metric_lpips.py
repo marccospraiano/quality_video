@@ -33,11 +33,11 @@ def lpips(video_ref, video_dist):
             
             image0_ph = tf.compat.v1.placeholder(tf.float32)
             image1_ph = tf.compat.v1.placeholder(tf.float32)
-            patch_ref0 = image.extract_patches_2d(referenceFrame, (64,64), max_patches=32, random_state=None)
+            patch_ref0 = image.extract_patches_2d(referenceFrame, (64,64), max_patches=10, random_state=None)
             
             print('Patches shape: {}'.format(patch_ref0.shape))
             
-            patch_dist1 = image.extract_patches_2d(distortedFrame, (64,64), max_patches=32, random_state=None)
+            patch_dist1 = image.extract_patches_2d(distortedFrame, (64,64), max_patches=10, random_state=None)
             
             print('Patches shape: {}'.format(patch_dist1.shape))
             
