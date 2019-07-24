@@ -6,11 +6,11 @@ from skvideo.utils import *
 import os
 import csv
 import jnd_labels as jnd
-import metric_lpips as metric_lpips
-# import metric_ssim as metric_ssim
-# import metric_psnr as metric_psnr
-# import metric_vmaf as metric_vmaf
-# import create_video_yuv as yuv
+# import metric_lpips as metric_lpips
+#import metric_ssim as metric_ssim
+#import metric_psnr as metric_psnr
+import metric_vmaf as metric_vmaf
+import create_video_yuv as yuv
 import json
 import requests
 import time
@@ -26,29 +26,7 @@ bits_rate = []
 feature_video = []
 prefix = "videos"
 
-config_path = os.getcwd() + "/videoset_config.json"
-'''
-def convert_format_yuv(video, file):
-    
-    T, M, N, C = video.shape
-    v_file = np.zeros((T, M, N, C))
-    
-    # first produce a yuv for demonstration
-    for index, frames in enumerate(video):
-        v = cv2.cvtColor(frames, cv2.COLOR_RGB2YUV)
-        v_file[index] = v
-    
-    name = str(file)
-    name_path = '../VideosYUV/'+name[name.find('/')+14:name.find('/',2)+37]
-    file_name = name[name.find('/')+37:name.find('/',2)+65]
-    
-    # check out path 
-    if not os.path.isdir(name_path):
-        os.makedirs(name_path)
-    
-    # produces a yuv file using -pix_fmt=yuvj444p
-    skvideo.io.vwrite(name_path+file_name+'.yuv', v_file)
-'''        
+config_path = os.getcwd() + "/videoset_config.json"        
 
 def prepare_csv(features):
 
@@ -87,7 +65,7 @@ def save_csv(features):
 
     with open(arq, mode) as csvFile:
         
-        fields = ['RESOLUCAO', 'BITRATE', 'QP', 'FPS', 'PSNR', 'SSIM', 'LPIPS', 'VMAF']
+        fields = ['RESOLUCAO', 'BITRATE', 'FPS', 'PSNR', 'SSIM', 'VMAF', 'QP']
         writer = csv.DictWriter(csvFile, fieldnames=fields)
         
         if flag:
@@ -126,14 +104,14 @@ def extract_quality_metrics(videos_path, temp_reference_file):
     video_ref_frame = [x for x in video_ref_obj]
     video_ref_frame = np.array(video_ref_frame)
     
-    '''referencename_yuv = temp_reference_file.split(".")
+    referencename_yuv = temp_reference_file.split(".")
     del referencename_yuv[-1]
     #print(referencename_yuv)
     referencename_yuv = referencename_yuv[0]+".yuv"
     
     if not yuv.convert_format_yuv(video_ref_frame, referencename_yuv):
         print("Error in YUV Conversion")
-    '''
+        
     print(temp_reference_file)
     print(videos_path)
 
@@ -149,27 +127,26 @@ def extract_quality_metrics(videos_path, temp_reference_file):
         
         #dict_video['PSNR'] = metric_psnr.PSNR(video_frame, video_ref_frame)
         #dict_video['SSIM'] = metric_ssim.SSIM(video_frame, video_ref_frame)#np.array(scores_ssim)
-        dict_video['LPIPS'] = metric_lpips.lpips(video_frame, video_ref_frame)#np.array(scores_ssim)'''
+        #dict_video['LPIPS'] = metric_lpips.lpips(video_frame, video_ref_frame)#np.array(scores_ssim)'''
         
         #convert file to yuv format
-        '''
         videoname_yuv = video_path.split(".")
         del videoname_yuv[-1]
-        # videoname_yuv = videoname_yuv[0]+".yuv"
+        videoname_yuv = videoname_yuv[0]+".yuv"
         if not yuv.convert_format_yuv(video_frame, videoname_yuv):
             print("Error in YUV Conversion")
-        # dict_video['VMAF'] = metric_vmaf.vmaf(video_ref_frame, videoname_yuv, referencename_yuv)#np.array(scores_ssim)
-        '''
-        dict_video['RESOLUCAO'] = get_pixels(video_frame)#np.array(pixel_resolution)
+        
+        dict_video['VMAF'] = metric_vmaf._RumVMAF(video_ref_frame, videoname_yuv, referencename_yuv)
+        dict_video['RESOLUCAO'] = get_pixels(video_frame)                                              # np.array(pixel_resolution)
         dict_video['QP'] = str(video_path.split(".")[0]).split("_")[4]
         dict_video['FPS'] = str(video_path.split(".")[0]).split("_")[2]
         dict_video['BITRATE'] = get_bitrate(video_path)
 
         metrics.append(dict_video)
-        #delete_one_video(videoname_yuv)
+        delete_one_video(videoname_yuv)
 
 
-    #delete_one_video(referencename_yuv)
+    delete_one_video(referencename_yuv)
     print(metrics)
     
     # print('<== Scores PSNR =====================>\n',scores_psnr,'\n<==============================>\n')
