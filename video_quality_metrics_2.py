@@ -7,9 +7,9 @@ import os
 import csv
 import jnd_labels as jnd
 # import metric_lpips as metric_lpips
-#import metric_ssim as metric_ssim
-#import metric_psnr as metric_psnr
-import metric_vmaf as metric_vmaf
+import metric_ssim as metric_ssim
+import metric_psnr as metric_psnr
+#import metric_vmaf as metric_vmaf
 import create_video_yuv as yuv
 import json
 import requests
@@ -65,7 +65,7 @@ def save_csv(features):
 
     with open(arq, mode) as csvFile:
         
-        fields = ['RESOLUCAO', 'BITRATE', 'FPS', 'PSNR', 'SSIM', 'VMAF', 'QP']
+        fields = ['RESOLUCAO', 'BITRATE', 'FPS', 'PSNR', 'SSIM', 'VMAF', 'QP', 'JND']
         writer = csv.DictWriter(csvFile, fieldnames=fields)
         
         if flag:
@@ -81,10 +81,9 @@ def get_pixels(video):
     F, M, N, C = video.shape                               # F: frames, M: width, N: height, C: channel
     pixels = np.zeros(F, dtype=np.float32)
     
-    for index, pixel in enumerate(video):
-            pixels[index] = (pixel.shape[0] * pixel.shape[1])  # counts qtd of pixels (WidthxHeight)
+    n_pixels = (pixels[0].shape[0] * pixels[0].shape[1])  # counts qtd of pixels (WidthxHeight)
 
-    return int(np.sum(pixels))                
+    return int(n_pixels)                
 
 
 def get_bitrate(video_path):
@@ -92,9 +91,9 @@ def get_bitrate(video_path):
     filesize = os.path.getsize(video_path)
     filesize_bps = filesize * 8
 
-    return(filesize/5)
+    return(filesize_bps/5)
 
-def extract_quality_metrics(videos_path, temp_reference_file):
+def extract_quality_metrics(videos_path, temp_reference_file, jnd_point):
     
     videos = []
     metrics = []
@@ -116,7 +115,6 @@ def extract_quality_metrics(videos_path, temp_reference_file):
     print(videos_path)
 
     
-
     for video_path in videos_path:
         dict_video = {}    
         print('Loading Video '+video_path)
@@ -124,11 +122,11 @@ def extract_quality_metrics(videos_path, temp_reference_file):
         video_frame = [x for x in video_obj]
         video_frame = np.array(video_frame)                   # sets list to numpy array (video) 
            
-        
-        #dict_video['PSNR'] = metric_psnr.PSNR(video_frame, video_ref_frame)
-        #dict_video['SSIM'] = metric_ssim.SSIM(video_frame, video_ref_frame)#np.array(scores_ssim)
+        dict_video['JND'] = jnd_point
+        dict_video['PSNR'] = metric_psnr.PSNR(video_frame, video_ref_frame)
+        dict_video['SSIM'] = metric_ssim.SSIM(video_frame, video_ref_frame)#np.array(scores_ssim)
         #dict_video['LPIPS'] = metric_lpips.lpips(video_frame, video_ref_frame)#np.array(scores_ssim)'''
-        
+        '''
         #convert file to yuv format
         videoname_yuv = video_path.split(".")
         del videoname_yuv[-1]
@@ -137,6 +135,7 @@ def extract_quality_metrics(videos_path, temp_reference_file):
             print("Error in YUV Conversion")
         
         dict_video['VMAF'] = metric_vmaf._RumVMAF(video_ref_frame, videoname_yuv, referencename_yuv)
+        '''
         dict_video['RESOLUCAO'] = get_pixels(video_frame)                   # np.array(pixel_resolution)
         dict_video['QP'] = str(video_path.split(".")[0]).split("_")[4]
         dict_video['FPS'] = str(video_path.split(".")[0]).split("_")[2]
@@ -212,30 +211,33 @@ def main():
 
             # look for jnd points
             qps = []
+            
             for jnd_point in range(1,jnd_points+1):
                 jnd_path = data_csv_path+"/"+resolution+"_"+str(jnd_point)+".csv"
                 print(jnd_path)
-                qps.append(jnd.get_jnd_from_server(jnd_path, video_id-1))
-                print(qps)
-            # download files with jnd points
-            temp_files = []                                
-            for qp in qps:
-                print("QP",qp)
-                video_name = prefix+"{:0>3}".format(video_id)+"_"+resolution+"_"+str(fps)+"_qp_{:0>2}".format(qp)+".264"                
-                video_url = server+"/"+resolution_name+"/"+prefix+"{:0>3}".format(video_id)+"_"+resolution+"_"+str(fps)+"/"+video_name
+                jnd, qps = jnd.get_jnd_from_server(jnd_path, video_id-1)
+                print(jnd, qps)
                 
-                print(video_url)
-                temp_files.append(download_video(video_url))
+                # download files with jnd points
+                temp_files = []                                
                 
-            metrics = extract_quality_metrics(temp_files, temp_reference_file)
+                for qp in qps:
+                    #print("QP",qp)
+                    video_name = prefix+"{:0>3}".format(video_id)+"_"+resolution+"_"+str(fps)+"_qp_{:0>2}".format(qp)+".264"                
+                    video_url = server+"/"+resolution_name+"/"+prefix+"{:0>3}".format(video_id)+"_"+resolution+"_"+str(fps)+"/"+video_name
                 
-            save_csv(metrics)  # save metrics in csv mode
-            prepare_csv(metrics)
+                    print(video_url)
+                    #temp_files.append(download_video(video_url))
+                
+                #metrics = extract_quality_metrics(temp_files, temp_reference_file, jnd)
+                #save_csv(metrics)  # save metrics in csv mode
+            
+            #prepare_csv(metrics)
 
             #delete all temp videos
             temp_files.append(temp_reference_file)
 
-            success = delete_video(temp_files)
+            #success = delete_video(temp_files)
             print(success)
 
 
