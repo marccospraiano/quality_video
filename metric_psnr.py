@@ -18,9 +18,9 @@ def PSNR(video, reference_video):
             
             referenceFrame = reference_video[f].astype(np.float)            
             distortedFrame = video[f].astype(np.float)
-            """Please supply only the luminance channel"""
             
-            mse = np.mean((referenceFrame  - distortedFrame)**2)
+            """Please supply only the luminance channel (C==0)"""
+            mse = np.mean((referenceFrame[:,:,0]  - distortedFrame[:,:,0])**2)
             psnr = 10 * np.log10(maxsq / mse)
             scores[f] = psnr
             

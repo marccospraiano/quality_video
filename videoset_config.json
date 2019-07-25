@@ -1,7 +1,7 @@
 {
     "server":"http://vod.icomp.ufam.edu.br/video_dataset/VideoSet",
     "qps": 51,
-    "resolutions":["640x360","960x540","1280x720","1920x1080"],
+    "resolutions":["1280x720","1920x1080"],
     "outputCsv":"video_quality.csv",
     "fpss":
         [

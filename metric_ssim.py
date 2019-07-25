@@ -1,6 +1,8 @@
 from skimage.measure import compare_ssim as ssim
 import numpy as np
 import os
+from skvideo.measure import ssim
+
 os.environ['CUDA_VISIBLE_DEVICES'] = '1' # SET A SINGLE GPU
 
 
@@ -15,8 +17,8 @@ def SSIM(video, reference_video):
         distortedFrame = video[f].astype(np.float)
             
         """We pass the luminance channel"""
-        scores[f] = ssim(referenceFrame , distortedFrame, multichannel=True)
-        """psnr of the whole video"""
+        scores[f] = ssim( referenceFrame[:,:,0], distortedFrame[:,:,0], 
+                         K_1=0.01, K_2=0.03, bitdepth=8, scaleFix=True, avg_window=None)
         
         
     return np.mean(scores)

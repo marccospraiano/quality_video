@@ -137,7 +137,7 @@ def extract_quality_metrics(videos_path, temp_reference_file):
             print("Error in YUV Conversion")
         
         dict_video['VMAF'] = metric_vmaf._RumVMAF(video_ref_frame, videoname_yuv, referencename_yuv)
-        dict_video['RESOLUCAO'] = get_pixels(video_frame)                                              # np.array(pixel_resolution)
+        dict_video['RESOLUCAO'] = get_pixels(video_frame)                   # np.array(pixel_resolution)
         dict_video['QP'] = str(video_path.split(".")[0]).split("_")[4]
         dict_video['FPS'] = str(video_path.split(".")[0]).split("_")[2]
         dict_video['BITRATE'] = get_bitrate(video_path)
