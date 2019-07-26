@@ -215,8 +215,9 @@ def main():
             for jnd_point in range(1,jnd_points+1):
                 jnd_path = data_csv_path+"/"+resolution+"_"+str(jnd_point)+".csv"
                 print(jnd_path)
-                jnd, qps = jnd.get_jnd_from_server(jnd_path, video_id-1)
-                print(jnd, qps)
+                jnd_p, qps_string = jnd.get_jnd_from_server(jnd_path, video_id-1)
+                qps = (qps_string.replace("'", ""))
+                print(jnd_p, qps)
                 
                 # download files with jnd points
                 temp_files = []                                
@@ -229,7 +230,7 @@ def main():
                     print(video_url)
                     #temp_files.append(download_video(video_url))
                 
-                #metrics = extract_quality_metrics(temp_files, temp_reference_file, jnd)
+                #metrics = extract_quality_metrics(temp_files, temp_reference_file, jnd_p)
                 #save_csv(metrics)  # save metrics in csv mode
             
             #prepare_csv(metrics)
@@ -238,7 +239,7 @@ def main():
             temp_files.append(temp_reference_file)
 
             #success = delete_video(temp_files)
-            print(success)
+            #print(success)
 
 
 if __name__ == '__main__':
